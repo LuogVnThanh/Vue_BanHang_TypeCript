@@ -9,10 +9,47 @@ import { formatCurrency } from "../helpers/formatCurrency/formatCurrency";
 const authStore = useAuthStore();
 const productStore = useProductStore();
 const { userSelf } = storeToRefs(authStore);
-const { products } = storeToRefs(productStore);
+const { pagedProducts } = storeToRefs(productStore);
+
+// Hàm để lấy trang từ localStorage
+const getStoredPage = () => {
+  const storePage = localStorage.getItem("currentPage");
+  return storePage ? parseInt(storePage) : 1; // Nếu không có, mặc định là 1
+};
+
+const prevPage = () => {
+  if (productStore.currentPage > 1) {
+    productStore.getProductByPage(productStore.currentPage - 1); // Sử dụng productStore.currentPage
+    localStorage.setItem(
+      "currentPage",
+      (productStore.currentPage - 1).toString()
+    ); // Cập nhật trang vào localStorage
+  }
+};
+
+const nextPage = () => {
+  if (productStore.currentPage < productStore.last_page) {
+    // Đảm bảo không vượt quá trang cuối
+
+    productStore.getProductByPage(productStore.currentPage + 1); // Sử dụng productStore.currentPage
+    localStorage.setItem(
+      "currentPage",
+      (productStore.currentPage + 1).toString()
+    ); // Cập nhật trang vào localStorage
+  }
+};
+const goToPage = (page: number) => {
+  if (page >= 1 && page <= productStore.last_page) {
+    productStore.getProductByPage(page);
+    localStorage.setItem("currentPage", page.toString());
+  }
+};
 
 onMounted(() => {
-  productStore.getAllProduct();
+  const storePage = localStorage.getItem("currentPage");
+  const initialPage = storePage ? Number(storePage) : 1; // Nếu không có, mặc định là 1
+
+  productStore.getProductByPage(initialPage);
 });
 </script>
 
@@ -21,19 +58,30 @@ onMounted(() => {
     <!-- Div chính chứa tất cả sản phẩm -->
     <div class="product-list">
       <!-- Div tổng chứa sản phẩm -->
-      <div class="product-container" v-for="prod in products" :key="prod.id">
+      <div
+        class="product-container"
+        v-for="prod in pagedProducts"
+        :key="prod.id"
+      >
         <!-- Div chứa hình ảnh sản phẩm -->
         <div class="product-image">
           <!-- Cụ thể, bạn đang cố gắng truy cập thuộc tính prod.images?.[0].image), nhưng prod.images là một mảng các đối tượng hình ảnh, nên bạn cần truy cập vào đối tượng đầu tiên trong mảng. -->
-          
-          <img :src="getProductImage(prod.images[0]?.url)" alt="Product Image" />
-          
+
+          <RouterLink :to="{ name: 'DetailProduct', params: { id: prod.id } }">
+            <img
+              style="height: auto; width: 100%; object-fit: contain"
+              :src="getProductImage(prod.images[0]?.url)"
+              alt="Product Image"
+            />
+          </RouterLink>
 
           <!-- Nút Mua ngay và Chi tiết khi hover vào ảnh -->
           <div class="product-buttons">
             <!-- <button @click="buyNow(prod)">Mua Ngay</button> -->
             <button>Mua ngay</button>
-            <RouterLink :to="{name:'DetailProduct',params: { id: prod.id }}"><button>Chi Tiết</button></RouterLink>
+            <RouterLink :to="{ name: 'DetailProduct', params: { id: prod.id } }"
+              ><button>Chi Tiết</button></RouterLink
+            >
           </div>
         </div>
 
@@ -43,21 +91,44 @@ onMounted(() => {
           <div class="product-price">
             <!-- Giá gốc (gạch ngang) -->
             <span class="original-price"
-              >{{ formatCurrency(prod.price*1) }}
+              >{{ formatCurrency(prod.price * 1) }}
             </span>
             <!-- Giá đã giảm (giảm 30%) -->
             <span class="discounted-price" style="color: rgb(67, 67, 67)"
-              >{{ formatCurrency(prod.price *1) }}
+              >{{ formatCurrency(prod.price * 1) }}
             </span>
           </div>
         </div>
       </div>
     </div>
+   
     <!-- Phân trang -->
-    <!-- <div class="pagination">
-    <button @click="prevPage" :disabled="currentPage <= 1">Trước</button>
-    <button @click="nextPage" :disabled="currentPage >= totalPage">Sau</button>
-        </div> -->
+    <div class="pagination">
+      <!-- Nút số trang -->
+      <div class="page-buttons">
+        <button class="page-btn"
+          v-for="page in productStore.last_page"
+          :key="page"
+          @click="goToPage(page)"
+          :class="{ active: page === productStore.currentPage }"
+        >
+          {{ page }}
+        </button>
+      </div>
+
+      <!-- Nút điều hướng "Trước" và "Sau" -->
+      <div class="navigation-buttons">
+        <button class="nextandpev" @click="prevPage" :disabled="productStore.currentPage <= 1">
+          Trước
+        </button>
+        <button  class="nextandpev"
+          @click="nextPage"
+          :disabled="productStore.currentPage >= productStore.last_page"
+        >
+          Sau
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -75,7 +146,7 @@ onMounted(() => {
   flex: 0 1 calc(25% - 20px); /* Chiếm 25% chiều rộng mỗi sản phẩm trừ khoảng cách 20px */
   margin: 10px 0; /* Khoảng cách trên và dưới */
   text-align: center;
-  border-radius:5px ;
+  border-radius: 5px;
   border: 1px solid #ddd;
   padding: 15px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -171,19 +242,48 @@ onMounted(() => {
 .product-buttons button:hover {
   background-color: #0056b3;
 }
-.pagination button {
-  margin: 0 10px;
+.pagination {
+  display: flex;
+  justify-content: space-between; /* Căn hai phần sang hai bên */
+  align-items: center;
+  margin-top: 20px;
+}
+
+.page-buttons {
+  display: flex;
+  gap: 5px; /* Khoảng cách giữa các nút số trang */
+}
+
+.navigation-buttons {
+  display: flex;
+  gap: 10px; /* Khoảng cách giữa nút "Trước" và "Sau" */
+}
+
+.page-buttons button,
+.navigation-buttons button {
   padding: 8px 16px;
   background-color: #007bff;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  width: 100px;
+  width: 50px;
+}
+.nextandpev{
+width: 100px !important ;
 }
 
-.pagination button:disabled {
+.page-buttons button:disabled,
+.navigation-buttons button:disabled {
   background-color: #ccc;
   cursor: not-allowed;
 }
+
+/* Nút số trang hiện tại */
+.page-buttons button.active {
+  background-color: #0056b3;
+  font-weight: bold;
+}
+
+
 </style>

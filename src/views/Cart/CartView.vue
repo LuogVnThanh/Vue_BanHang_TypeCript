@@ -6,18 +6,16 @@ import { formatCurrency } from "../../helpers/formatCurrency/formatCurrency";
 import { getProductImage } from "../../helpers/getImages/getImage";
 import { useAuthStore } from "../../stores/authStore/authStore";
 import { useOrderStore } from "../../stores/orderStore/orderStore";
-import {IOrderItem} from "../../interface/order/order"
-
+import type { IOrderItem } from "../../interface/order/order";
 
 const authStore = useAuthStore();
 const cartStore = useCartStore();
-const orderStore = useOrderStore()
+const orderStore = useOrderStore();
 const { userSelf } = storeToRefs(authStore);
-const {   totalPrice, totalItems, cartProduct } =
-  storeToRefs(cartStore);
+const { totalPrice, totalItems, cartProduct } = storeToRefs(cartStore);
 
 //Nút xóa
-const removeItem = (id:number) => {
+const removeItem = (id: number) => {
   cartStore.removeToCart(id); // Gọi hàm từ cartStore để xóa sản phẩm
 };
 
@@ -35,29 +33,38 @@ const grandTotal = computed(() => {
 
 //====================Thông tin người dùng===============
 const inforOrder = reactive<IOrderItem>({
-  phone :"0123456789",
-  address:"Bửu Long",
-  note:"Không có"
-})
-// Hàm xử lý thông tin order
-const submitOrder = async()=>{
-  // Tạo đối tượng đăng nhập
-  // Kiểm tra tính hợp lệ của thông tin người dùng
-  if (!inforOrder.phone || !inforOrder.address|| !inforOrder.note) {
+  id:0,
+  phone: "0123456789",
+  address: "Bửu Long",
+  note: "Không có",
+});
+
+
+
+// Hàm xử lý xác nhận đặt hàng===================
+
+// Biến để quản lý modal xác nhận
+const showModal = ref(false);
+
+// Hàm đóng modal
+const closeModal = () => {
+  showModal.value = false;
+};
+
+const confirmOrder = async () => {
+  if (!inforOrder.phone || !inforOrder.address || !inforOrder.note) {
     alert("Vui lòng điền đầy đủ thông tin liên hệ!");
     return;
   }
-
-      // Gọi hàm tạo đơn hàng
   await orderStore.createOrder(inforOrder);
   await cartStore.GetAllProductByCart();
-  // Có thể thêm logic để reset form hoặc điều hướng người dùng
+  closeModal(); // Đóng modal sau khi đặt hàng
+};
 
-  }
 
-  // =======================Onmound================
+
+// =======================Onmound================
 onMounted(() => {
-  
   cartStore.GetAllProductByCart().then(() => {
     console.log(cartProduct.value); // Kiểm tra dữ liệu sản phẩm sau khi tải
   });
@@ -208,17 +215,10 @@ onMounted(() => {
             <!-- <input type="hidden" name=" " value="" id=" " /> -->
           </div>
 
-          <!-- Nơi nhận -->
-          <div>
-            <div class="radio" style="margin-top: 20px">
-              <label style="margin-bottom: 10px">
-                <input type="radio" name=" " checked=" " value=" " /> Nhận hàng
-                tại nhà/công ty/bưu điện
-              </label>
-            </div>
-          </div>
           <!-- Địa chỉ -->
-          <div class="form-group" id=" ">
+          <div class="form-group" style="margin-top: 20px">
+            <label style="margin-bottom: 10px">Địa chỉ nhận hàng</label>
+
             <input
               type="text"
               class="required form-control"
@@ -242,7 +242,11 @@ onMounted(() => {
 
           <!-- Form đặt hàng -->
         </form>
-        <button  @click.prevent="submitOrder" class="btn btn-info fw" style="width: 100%">
+        <button
+          @click.prevent="showModal=!showModal"
+          class="btn btn-info fw"
+          style="width: 100%"
+        >
           Đặt hàng
         </button>
         <hr />
@@ -251,5 +255,145 @@ onMounted(() => {
         </a>
       </div>
     </div>
+
+    <!-- Modal xác nhận đặt hàng -->
+    <div v-if="showModal" class="confirmation-modal" >
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Xác Nhận Đặt Hàng</h3>
+          <button class="close" @click="closeModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>Bạn có chắc chắn muốn đặt hàng không?</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-confirm" @click="confirmOrder">
+            Xác Nhận
+          </button>
+          <button class="btn btn-cancel" @click="closeModal">Hủy</button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showModal" class="modal-backdrop fade show"></div>
   </div>
 </template>
+
+<style scoped>
+.confirmation-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10500;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+  width: 450px;
+  max-width: 90%;
+  animation: slideDown 0.4s ease;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 10px;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: bold;
+  color: #333;
+}
+
+.close {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #888;
+  transition: color 0.3s ease;
+}
+
+.close:hover {
+  color: #000;
+}
+
+.modal-body {
+  margin: 20px 0;
+  font-size: 16px;
+  color: #555;
+  line-height: 1.5;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #ddd;
+}
+
+.btn {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  font-size: 16px;
+}
+
+.btn-confirm {
+  background-color: #28a745;
+  color: white;
+  font-weight: bold;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.btn-confirm:hover {
+  background-color: #218838;
+}
+
+.btn-cancel {
+  background-color: #dc3545;
+  color: white;
+  font-weight: bold;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.btn-cancel:hover {
+  background-color: #c82333;
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-20%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+</style>

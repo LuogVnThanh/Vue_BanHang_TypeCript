@@ -4,11 +4,50 @@ import { ref, onMounted, watch } from "vue";
 import { useRouter, onBeforeRouteUpdate } from "vue-router";
 import { useAuthStore } from "../../stores/authStore/authStore";
 import { useCategoryStore } from "../../stores/categoryStore/categoryStore";
+import { useProductStore } from "../../stores/productStore/productStore";
+import { getProductImage } from "../../helpers/getImages/getImage";
 
 const router = useRouter();
+const productStore = useProductStore();
 const authStore = useAuthStore();
 const categoryStore = useCategoryStore();
 const { categories } = storeToRefs(categoryStore);
+
+const { ResultProductBySearch } = storeToRefs(productStore);
+
+const goToHomePage = () => {
+  productStore.currentPage = 1; // Đặt lại currentPage về 1
+  localStorage.setItem("currentPage", "1"); // Cập nhật localStorage
+  productStore.getProductByPage(1); // Gọi lại hàm lấy sản phẩm trang 1
+};
+// =====================SEARCH=========================
+const searchKeyWord = ref("");
+const showSearchInput = ref(false);
+const showSearchResult = ref(false);
+
+const toggleSearch = () => {
+  showSearchInput.value = !showSearchInput.value;
+  if (!showSearchInput.value) {
+    showSearchResult.value = false;
+    searchKeyWord.value = "";
+  }
+};
+const searchProduct = async () => {
+  try {
+    if (searchKeyWord.value) {
+      await productStore.searchProduct(searchKeyWord.value);
+      showSearchResult.value = true;
+    } else {
+      showSearchResult.value = false;
+    }
+  } catch (error) {
+    console.error("Lỗi khi tìm kiếm sản phẩm:", error);
+  }
+};
+
+watch(searchKeyWord, () => {
+  searchProduct();
+});
 
 // ==============================================
 onMounted(() => {
@@ -21,14 +60,15 @@ onMounted(() => {
   <nav class="navbar navbar-expand-lg bg-light">
     <div class="container container-fluid">
       <!-- Logo bên trái -->
-      <a class="navbar-brand" href="/">
+
+      <router-link class="navbar-brand" to="/" @click="goToHomePage">
         <img
           src="https://media.routine.vn/prod/media/3a5190d5-6bc5-4dd1-b8a9-3b143556822a.webp"
           alt="Logo"
-          width="40"
+          width="80"
           height="40"
         />
-      </a>
+      </router-link>
 
       <!-- Nút toggle cho di động -->
       <button
@@ -84,45 +124,72 @@ onMounted(() => {
         </ul>
       </div>
 
-      <!-- Icon Cart, User, Logout nằm bên phải -->
-      <div class="d-flex">
-        <!-- Icon tìm kiếm -->
+      <!-- Chỉnh sửa phần search và icons -->
+      <div class="nav-actions">
+        <!-- Search container -->
         <div class="search-container">
-          <i class="bi bi-search" @click="toggleSearch"></i>
-          <input
-            v-if="showSearch"
-            type="text"
-            class="search-input"
-            placeholder="Tìm kiếm..."
-          />
+          <i class="bi bi-search search-icon" @click="toggleSearch"></i>
+          <transition name="fade">
+            <input
+              v-if="showSearchInput"
+              v-model="searchKeyWord"
+              type="text"
+              class="search-input"
+              placeholder="Tìm kiếm..."
+              @input="searchProduct"
+            />
+          </transition>
+
+          <!-- Kết quả tìm kiếm -->
+          <div
+            v-if="showSearchResult && showSearchInput"
+            class="search-results"
+          >
+            <div v-if="ResultProductBySearch.length === 0" class="no-results">
+              Không có sản phẩm nào tìm thấy.
+            </div>
+            <div v-else class="results-container">
+              <router-link
+                v-for="item in ResultProductBySearch"
+                :key="item.id"
+                :to="{ name: 'DetailProduct', params: { id: item.id } }"
+                class="search-item"
+              >
+                <img
+                  :src="getProductImage(item.images[0]?.url)"
+                  alt="Product"
+                  class="search-product-image"
+                />
+                <div class="search-product-name">{{ item.name }}</div>
+              </router-link>
+            </div>
+          </div>
         </div>
 
-        <!-- Icon giỏ hàng -->
-        <a class="nav-link"  @click="authStore.HandleLoginCart()">
+        <!-- Cart Icon -->
+        <a class="nav-link" @click="authStore.HandleLoginCart()">
           <i class="bi bi-cart"></i>
         </a>
 
-        <!-- Icon người dùng -->
+        <!-- User Icon/Login -->
         <a
           class="nav-link"
           v-if="authStore.isAuthenticated"
           @click="authStore.HandleProfile()"
         >
-          <i class="bi bi-person">{{ authStore.userSelf?.name }}</i>
-        </a>
-
-        <!-- Hiển thị nút đăng nhập nếu chưa có token -->
+        <i class="bi bi-person" style="margin-right: 3px;"></i> {{ authStore.userSelf?.name }} 
+      </a>
         <a v-else class="nav-link" @click="authStore.HandleProfile()">
-          <i class="bi bi-person"> Đăng nhập</i>
+          <i class="bi bi-person" style="margin-right: 3px;"> </i>Đăng nhập
         </a>
 
-        <!-- Nút đăng xuất chỉ hiển thị khi đã đăng nhập -->
+        <!-- Logout Icon -->
         <a
           v-if="authStore.isAuthenticated"
           class="nav-link"
           @click="authStore.Logout"
         >
-          <i class="bi bi-box-arrow-right"></i> Đăng xuất
+          <i class="bi bi-box-arrow-right" style="margin-right: 3px;"></i> Đăng xuất
         </a>
       </div>
     </div>
@@ -146,12 +213,15 @@ onMounted(() => {
 }
 
 .nav-item {
-  margin-right: 20px; /* Khoảng cách giữa các mục */
+  margin-right: 5px; /* Khoảng cách giữa các mục */
 }
 
 .nav-link {
   color: black; /* Màu chữ mặc định */
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
 }
 
 .nav-link:hover {
@@ -166,104 +236,103 @@ onMounted(() => {
   display: block; /* Hiện menu con khi hover vào menu cha */
 }
 
-.d-flex {
-  margin-right: 50px;
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
 }
 
-.d-flex a {
-  margin-left: 15px; /* Khoảng cách giữa các icon */
-}
-
-.navbar-brand img {
-  height: 40px;
-  width: auto; /* Kích thước logo */
-}
-
-/* Style cho input tìm kiếm */
 .search-container {
-  position: relative; /* Để có thể định vị input */
+  display: flex;
+  align-items: center;
+  position: relative;
+  gap: 8px;
 }
 
-.search-input {
-  display: block;
-  position: absolute; /* Đặt input ra ngoài */
-  right: -270px !important; /* Di chuyển input ra ngoài khung nhìn */
-  padding-left: 20px !important;
-  top: 50%;
-  transform: translateY(-50%);
-  padding: 5px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  transition: right 0.5s ease; /* Hiệu ứng di chuyển */
-}
-
-.search-container .bi-search {
+.search-icon {
   cursor: pointer;
+  font-size: 1.2rem;
+  padding: 5px;
 }
 
-/* Hiện input khi showSearch là true */
-.search-container .search-input {
-  right: 0; /* Về lại vị trí ban đầu */
+/* Search input */
+.search-input {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  width: 180px;
+  height: 35px;
+  font-size: 14px;
+  transition: all 0.3s ease;
 }
 
-/* Ẩn input khi showSearch là false */
-.search-container .search-input {
-  right: -250px; /* Ẩn input */
-}
-
-/* Div chứa kết quả tìm kiếm */
+/* Search results */
 .search-results {
   position: absolute;
-  background-color: white;
-  border: 1px solid #ddd;
+  top: 100%;
+  right: 0;
   width: 300px;
-  max-height: 300px; /* Thay đổi chiều cao tối đa */
+  max-height: 400px;
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   overflow-y: auto;
+  z-index: 1000;
   margin-top: 5px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  border-radius: 4px; /* Bo góc */
-  z-index: 100; /* Đảm bảo nó ở trên */
 }
 
-/* Sản phẩm trong danh sách tìm kiếm */
+.no-results {
+  padding: 15px;
+  text-align: center;
+  color: #666;
+}
+
+.results-container {
+  padding: 5px 0;
+}
+
 .search-item {
   display: flex;
   align-items: center;
-  padding: 10px; /* Tăng khoảng cách padding */
-  border-bottom: 1px solid #eee;
-  transition: background-color 0.3s; /* Hiệu ứng chuyển màu nền */
-  text-decoration: none; /* Bỏ gạch chân cho router-link */
-  color: inherit; /* Đảm bảo màu chữ kế thừa */
+  padding: 10px 15px;
+  text-decoration: none;
+  color: inherit;
+  transition: background-color 0.2s;
 }
 
 .search-item:hover {
-  background-color: #f0f8ff; /* Màu nền khi hover */
+  background-color: #f5f5f5;
 }
 
 .search-product-image {
   width: 50px;
   height: 50px;
+  object-fit: cover;
+  border-radius: 4px;
   margin-right: 10px;
-  border-radius: 4px; /* Bo góc ảnh */
 }
 
 .search-product-name {
+  font-size: 14px;
+  color: #333;
   flex: 1;
-  font-weight: bold; /* Làm cho tên sản phẩm nổi bật hơn */
-  color: #333; /* Màu chữ */
 }
 
-/* Custom style cho thẻ p trong kết quả tìm kiếm */
-.search-results p {
-  margin: 0; /* Xóa khoảng cách mặc định */
-  padding: 10px; /* Thêm padding cho thẻ p */
-  font-size: 14px; /* Thay đổi kích thước chữ */
-  color: #333; /* Màu chữ */
-  font-weight: bold; /* Làm chữ đậm hơn */
-  text-align: center; /* Căn giữa văn bản */
-  background-color: #f8f9fa; /* Màu nền cho thẻ p */
-  border-radius: 4px; /* Bo góc cho thẻ p */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Thêm bóng cho thẻ p */
-  margin-bottom: 5px; /* Khoảng cách dưới giữa các thẻ p */
+.other-icons .nav-link {
+  margin-left: 15px;
+}
+
+/* Animation cho input */
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  width: 0;
+  padding: 0;
 }
 </style>

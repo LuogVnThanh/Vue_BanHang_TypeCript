@@ -32,7 +32,7 @@ export const useCartStore = defineStore("cartStore", {
         );
         this.cartProduct = response.data;
       } catch (error) {
-        console.log("Có lỗi khi lấy sản phẩm từ CartStore",error);
+        console.log("Có lỗi khi lấy sản phẩm từ CartStore", error);
       }
     },
     // Add to Cart
@@ -49,11 +49,10 @@ export const useCartStore = defineStore("cartStore", {
             quantity: quantity, // số lượng
           }
         );
- 
 
         if (response.data && response.data.variants) {
           const newItem = {
-            id: response.data.variants.id ,
+            id: response.data.variants.id,
             product_variant_id,
             quantity,
             // Thêm các thông tin khác nếu cần
@@ -72,29 +71,18 @@ export const useCartStore = defineStore("cartStore", {
           alert("Sản phẩm đã được thêm vào giỏ hàng.");
         }
       } catch (error) {
-        if(axios.isAxiosError(error)){
-          if(error.response?.status===500){
-            alert("Không đủ số lượng sản phẩm.");
-          }
-          else {
-            alert(`Có lỗi xảy ra: ${error.response?.data.message || 'Không xác định.'}`);
-          }
-        }
-        else {
-          console.log("Có lỗi khi thêm sản phẩm vào giỏ hàng", error);
-        }
+        console.log("Có lỗi khi thêm sản phẩm vào giỏ hàng", error);
       }
-    
     },
     // Remove Cart
-    async removeToCart(id:number){
+    async removeToCart(id: number) {
       try {
         await axiosInstance.delete(`/cart-item/delete/${id}`);
-        this.cartProduct = this.cartProduct.filter((item) => item.id!== id);
+        this.cartProduct = this.cartProduct.filter((item) => item.id !== id);
         alert("Sản phẩm đã được xóa khỏi giỏ hàng.");
       } catch (error) {
         console.log("Có lỗi khi xóa sản phẩm khỏi giỏ hàng", error);
       }
-    }
+    },
   },
 });

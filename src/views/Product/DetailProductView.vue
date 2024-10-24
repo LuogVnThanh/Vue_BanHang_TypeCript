@@ -97,7 +97,7 @@ const increaseQuantity = () => {
 
 // Hàm xử lý nút thêm vào giỏ hàng
 const addToCart = () => {
- 
+ if(authStore.isAuthenticated){
   if (selectedVariant.id && selectedVariant.id !== 0) {
     // sử dụng selectedVariant.value
     const product_variant_id = selectedVariant.id; // lấy id
@@ -124,6 +124,12 @@ const addToCart = () => {
       alert("Vui lòng chọn số lượng hợp lệ.");
     }
   }
+ }
+ else{
+  alert("Vui lòng đăng nhập để mua hàng.");
+  router.push({ name: "Login" });
+ }
+
 };
 
 // Thiết lập thuộc tính mặc định khi component được mount
@@ -226,7 +232,7 @@ onMounted(() => {
       <button
         class="confirm-btn"
         :disabled="!selectedVariant || selectedVariant.quantity === 0"
-        @click="addToCart(), authStore.HandleLoginCart()"
+        @click="addToCart()"
       >
         Thêm vào giỏ hàng
       </button>

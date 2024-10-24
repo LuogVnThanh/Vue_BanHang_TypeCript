@@ -1,17 +1,20 @@
-export interface ICartItem{
-    id:number;
-    // cart_id:number;
-    product_variant_id:number;
-    quantity:number;
-    
-    // price: number
+export interface ICartItem {
+  id: number;
+  product_variant_id: number;
+  quantity: number;
+  // product_variant: ICartVariant;
+  // price: number;
 }
-export interface ICartVariant{
-    id:number;
-    quantity:number;
-    variants:{
-        id :number;
-        sku:string
-      
-    }
+export interface ICartVariant {
+  id: number;
+  // quantity:number;
+  variants:{
+   id :number;
+  images: IImage[];
+  sku: string;
+  }
+}
+
+interface IImage {
+  url: string;
 }

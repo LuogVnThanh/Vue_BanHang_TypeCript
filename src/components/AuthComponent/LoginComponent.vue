@@ -11,7 +11,7 @@ const authStore = useAuthStore();
 const errorMessage = ref("");
 const showPassword = ref(false); //Khởi tạo ẩn hiện password
 const formState = reactive<ILogin>({
-  email: "user@gmail.com",
+  email: "admin@gmail.com",
   password: "123456",
  
 });

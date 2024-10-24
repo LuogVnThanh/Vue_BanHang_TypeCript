@@ -1,7 +1,7 @@
 export interface IAuthResponse {
   token: string | null;
   // refreshToken: string | null
-  // expires: number | null
+  expires: number | null
 }
 
 export interface ILogin {

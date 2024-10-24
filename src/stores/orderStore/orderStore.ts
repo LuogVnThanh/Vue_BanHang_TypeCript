@@ -34,10 +34,33 @@ export const useOrderStore = defineStore("orderStore", {
     //Get Order Item
     async getOrder() {
       try {
-        const response = await axiosInstance.get<IOrder[]>("/order/get");
+        const response = await axiosInstance.get<IOrder[]>("/order/getbyuser");
         this.orderList = response.data;
       } catch (error) {
         console.log("Có lỗi khi lấy đơn hàng", error);
+      }
+    },
+    // Update Item
+    async updateOrderItem(id:number,orderItem: IOrderItem) {
+      try {
+       const response=  await axiosInstance.put(`/order/update/${id}`, orderItem);
+       // Cập nhật lại orderList sau khi thành công
+       const index = this.orderList.findIndex(order => order.id === id);
+       if (index !== -1) {
+         this.orderList[index] = response.data; // Hoặc gán giá trị mới nếu API trả về thông tin đầy đủ
+       }
+       alert("Cập nhập thành công")
+      } catch (error) {
+        console.log("Có lỗi khi cập nhật đơn hàng", error);
+      }
+    },
+    // Delete Item
+    async deleteOrderItem(id: number) {
+      try {
+        await axiosInstance.delete(`/order/delete/${id}`);
+        alert("Xóa đơn hàng thành công!");
+      } catch (error) {
+        console.log("Có lỗi khi xóa đơn hàng", error);
       }
     },
   },
