@@ -55,6 +55,8 @@ export const useCartStore = defineStore("cartStore", {
             id: response.data.variants.id,
             product_variant_id,
             quantity,
+            price: 0, // Gán giá trị mặc định cho price nếu cần
+            
             // Thêm các thông tin khác nếu cần
           };
 
@@ -68,7 +70,7 @@ export const useCartStore = defineStore("cartStore", {
             this.cartProduct.push(newItem);
           }
           // Có thể thêm thông báo thành công ở đây
-          alert("Sản phẩm đã được thêm vào giỏ hàng.");
+          alert("Sản phẩm đã được thêm vào giỏ hàng. ");
         }
       } catch (error) {
         console.log("Có lỗi khi thêm sản phẩm vào giỏ hàng", error);

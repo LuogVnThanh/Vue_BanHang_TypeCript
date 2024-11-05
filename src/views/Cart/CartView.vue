@@ -93,10 +93,7 @@ onMounted(() => {
         <!-- Start Cart -->
       </div>
       <!-- Chi tiết đơn hàng -->
-      <!-- 
-          max-height: 400px;: Đặt chiều cao tối đa của vùng cuộn. Bạn có thể thay đổi giá trị 400px theo nhu cầu của bạn.
-          overflow-y: auto;: Thiết lập thanh cuộn dọc (scroll bar) tự động xuất hiện khi nội dung vượt quá chiều cao của div.
-          width: 100%: Đảm bảo bảng chiếm toàn bộ chiều rộng của div bọc bên ngoài. -->
+  
       <div
         class="col-sm-12 col-md-6"
         style="max-height: 400px; overflow-y: auto"
@@ -290,7 +287,7 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 10500;
+  z-index: 1100;
   animation: fadeIn 0.3s ease-in-out;
 }
 

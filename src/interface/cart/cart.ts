@@ -2,8 +2,8 @@ export interface ICartItem {
   id: number;
   product_variant_id: number;
   quantity: number;
-  // product_variant: ICartVariant;
-  // price: number;
+  product_variant?: any;
+  price: number;
 }
 export interface ICartVariant {
   id: number;

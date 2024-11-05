@@ -3,14 +3,16 @@ import type {
   IDetailProduct,
   IProduct,
   IProductPage,
+  IProductShowByAdmin,
   ISearchProduct,
+  IProductCreate
 } from "@/interface/product/product";
 import { defineStore } from "pinia";
 
 export const useProductStore = defineStore("productStore", {
   state: () => ({
     // adminProducts lưu tất cả sản phẩm cho quản trị viên
-    adminProducts: [] as IProduct[],
+    adminProducts: [] as IProductShowByAdmin[],
 
     // pagedProducts lưu sản phẩm được phân trang cho người dùng
     pagedProducts: [] as IProduct[] ,
@@ -26,7 +28,7 @@ export const useProductStore = defineStore("productStore", {
     //getall============================================================
     async getAllProduct() {
       try {
-        const response = await axiosInstance.get<IProduct[]>("/product/getall");
+        const response = await axiosInstance.get<IProductShowByAdmin[]>("/product/getall");
         this.adminProducts = response.data;
       } catch (error) {
         console.log("Có lỗi khi lấy tất cả sản phẩm", error);
@@ -82,6 +84,46 @@ export const useProductStore = defineStore("productStore", {
         console.log("Có lỗi khi tìm kiếm sản phẩm", error);
       }
     },
-  
+
+    // CreateProduct===============================================================
+    async addProduct(product: IProductCreate){
+      try{
+        const response = await axiosInstance.post<IProductShowByAdmin>('/product/create',{...product} );
+   
+
+        const result =  response.data;
+        this.adminProducts.push(result)
+        
+        alert("Thêm sản phẩm thành công.");
+         
+        return true;
+      }catch(error){
+        console.log("Có lỗi khi thêm sản phẩm", error);
+      }
+      finally{
+        this.getAllProduct()
+      }
+    },
+    // UpdateProduct===============================================================
+    // async updateproduct(id:number, productUpdate: IProductUpdate){
+    //   try{
+    //     const response = await axiosInstance.put<IProductUpdate>(`/product/update/${id}`, productUpdate);
+    //     alert("Cập nhật sản phẩm thành công.");
+    //     await this.getAllProduct();
+    //   }catch(error){
+    //     console.log("Có lỗi khi cập nhật sản phẩm", error);
+    //   }
+    // },
+
+    //DeletePRoduct==============================================================
+    async deleteProduct(id: number) {
+      try {
+        await axiosInstance.delete(`/product/delete/${id}`);
+        alert("Sản phẩm đã được xóa.");
+        await this.getAllProduct();
+      } catch (error) {
+        console.log("Có lỗi khi xóa sản phẩm", error);
+      }
+    },
   },
 });

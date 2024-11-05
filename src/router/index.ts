@@ -8,6 +8,7 @@ import ProductByCategory from "../views/Product/ProductByCateView.vue";
 import DetailProduct from "../views/Product/DetailProductView.vue";
 import DashBoard from "../views/Admin/DashboardView.vue";
 import Cart from "../views/Cart/CartView.vue";
+import Order from"../views/Order/OrderView.vue";
 import ManagerProduct from "../views/Admin/ManagerProductView.vue";
 import ManagerUser from "../views/Admin/ManagerUserView.vue";
 import ManagerRevenue from "../views/Admin/ManagerRevenueView.vue";
@@ -77,6 +78,11 @@ const router = createRouter({
       name: "Cart",
       component: Cart,
     },
+    {
+      path: "/order",
+      name: "Order",
+      component: Order,
+    },
   ],
 });
 
@@ -123,15 +129,18 @@ router.beforeEach(async (to, from, next) => {
   }
  
 
-  // Kiểm tra đường dẫn đăng nhập
-  if (to.name === "Login") {
-    if (authStore.isAuthenticated) {
-      // Nếu đã đăng nhập, chuyển hướng đến trang phù hợp
-      return next(authStore.isAdmin ? "/dashboard" : "/");
-
-    }
-    return next();
-  }
+  // // Kiểm tra đường dẫn đăng nhập
+  // if (to.name === "Login") {
+  //   if (authStore.isAuthenticated) {
+  //     // Nếu đã đăng nhập, chuyển hướng đến trang phù hợp
+  //     if (authStore.isAdmin) {
+  //       return next({ name: "Dashboard" });
+  //     } else {
+  //       return next({ name: "Home" });
+  //     }
+  //   }
+  //   return next();
+  // }
 
   // Kiểm tra quyền truy cập cho các trang khác
   if (to.meta.requiresAdmin && !authStore.isAdmin) {

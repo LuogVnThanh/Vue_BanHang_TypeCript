@@ -14,7 +14,7 @@ export const useAuthStore = defineStore("authStore", {
   state: () => ({
     Token: null as string | null,
     userSelf: null as IProfile | null,
-    role_id: null as number | null,
+    Role: null as string[] | null,
 
     refresh_token: null as string | null,
     token_expired: null as number | null, //Kiểm tra thời hạn token
@@ -44,9 +44,9 @@ export const useAuthStore = defineStore("authStore", {
           const now = Date.now();
           if (this.token_expired <= now) {
             // Nếu đã hết hạn, thử refresh token
-            const success  = await this.RefreshToken();
+            const success = await this.RefreshToken();
 
-            if (!success ) {
+            if (!success) {
               // Nếu refresh thất bại, logout
               this.Logout();
               return false;
@@ -65,17 +65,19 @@ export const useAuthStore = defineStore("authStore", {
         } catch (error) {
           console.log("Lỗi khi khởi tạo auth", error);
           this.Logout();
-          return false
+          return false;
         }
       }
       return false;
     },
     // ===========Profie==================
-    async GetProfile():Promise<IProfile|undefined> {
+    async GetProfile(): Promise<IProfile | undefined> {
       try {
         const response = await axiosInstance.get<IProfile>("/me");
         this.userSelf = response.data;
         Cookies.set("user", JSON.stringify(response.data));
+        this.Role = response.data.role; // Đảm bảo Role được gán
+
         return response.data;
       } catch (error) {
         console.error("Lỗi khi lấy thông tin người dùng", error);
@@ -117,8 +119,11 @@ export const useAuthStore = defineStore("authStore", {
           // console.log("Token expired:", this.token_expired);
 
           this.startCheckTokenExpiry();
-
-          router.push({ name: "Home" });
+          if ( this.isAdmin) {
+            router.push({ name: "Dashboard" });
+          } else {
+            router.push({ name: "Home" });
+          }
         }
       } catch (error) {
         console.error("Có lỗi khi đăng nhập", error);
@@ -146,7 +151,7 @@ export const useAuthStore = defineStore("authStore", {
           this.startCheckTokenExpiry();
           return true;
         }
-        return false
+        return false;
       } catch (error) {
         console.log("Có lỗi khi refresh token", error);
         this.Logout(); // Đăng xuất nếu không thể refresh
